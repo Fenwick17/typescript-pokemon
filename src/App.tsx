@@ -1,24 +1,64 @@
-import React from 'react';
-import logo from './logo.svg';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import './App.css';
+import PokemonList from './components/PokemonList';
+import SelectedPokemon from './components/SelectedPokemon';
+import FilterPokemon from './components/FilterPokemon';
 
 function App() {
+  const [pokemon, setPokemon] = useState<Pokemon[]>([]);
+  const [selectedPokemon, setSelectedPokemon] = useState<Pokemon>();
+  const [filterName, setFilteredPokemon] = useState('');
+  const [filterType, setFilteredType] = useState([]);
+
+  const getAllPokemon = async (): Promise<void> => {
+    const allPokemon = await axios(
+      'https://pokeapi.co/api/v2/pokemon?limit=151'
+    );
+    const { results } = allPokemon.data;
+    setPokemon(
+      await Promise.all(
+        results.map(
+          async (pokemon: Pokemon): Promise<Pokemon> => {
+            const pokemonResponse = await axios(pokemon.url);
+            return await pokemonResponse.data;
+          }
+        )
+      )
+    );
+  };
+
+  useEffect(() => {
+    getAllPokemon();
+  }, []);
+
+  const getSinglePokemon = (poke: Pokemon) => {
+    setSelectedPokemon(poke);
+  };
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <h1>POKEDEX!</h1>
+      <FilterPokemon
+        filterName={filterName}
+        filterType={filterType}
+        setFilteredPokemon={setFilteredPokemon}
+        setFilteredType={setFilteredType}
+      />
+      <div>
+        {pokemon && (
+          <PokemonList
+            pokemon={pokemon}
+            getSinglePokemon={getSinglePokemon}
+            filterName={filterName}
+            filterType={filterType}
+          />
+        )}
+      </div>
+      <div className="pokemon-details">
+        <h2>Pokemon details</h2>
+        {selectedPokemon && <SelectedPokemon pokemon={selectedPokemon} />}
+      </div>
     </div>
   );
 }
